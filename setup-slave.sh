@@ -27,6 +27,13 @@ instance_type=$(curl http://169.254.169.254/latest/meta-data/instance-type 2> /d
 
 echo "Setting up slave on `hostname`... of type $instance_type"
 
+echo "Installing cloud-disk for root partition resizing"
+yum install -y cloud-disk-utils.noarch
+echo "Resizing root partition"
+growpart /dev/sda 1
+echo "Root parition resized you need to manually reboot slaves after the installation: spark-ec2 reboot-slaves"
+
+
 if [[ $instance_type == r3* || $instance_type == i2* || $instance_type == hi1* ]]; then
   # Format & mount using ext4, which has the best performance among ext3, ext4, and xfs based
   # on our shuffle heavy benchmark
@@ -43,15 +50,15 @@ if [[ $instance_type == r3* || $instance_type == i2* || $instance_type == hi1* ]
     # To turn TRIM support on, uncomment the following line.
     #echo '/dev/sdc /mnt2  ext4  defaults,noatime,discard 0 0' >> /etc/fstab
     if [[ $instance_type == "r3.8xlarge" ]]; then
-      mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 /dev/sdc      
+      mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 /dev/sdc
       mount -o $EXT4_MOUNT_OPTS /dev/sdc /mnt2
     fi
     # To turn TRIM support on, uncomment the following line.
     #echo '/dev/sdf /mnt2  ext4  defaults,noatime,discard 0 0' >> /etc/fstab
     if [[ $instance_type == "hi1.4xlarge" ]]; then
-      mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 /dev/sdf      
+      mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 /dev/sdf
       mount -o $EXT4_MOUNT_OPTS /dev/sdf /mnt2
-    fi    
+    fi
   fi
 fi
 
